@@ -1,7 +1,14 @@
+import os
 import aio_pika
+from dotenv import load_dotenv
 import uvicorn
 import asyncio
 from fastapi import FastAPI
+
+# Carregar as variáveis do arquivo .env
+load_dotenv()
+
+RABBITMQ_URL = os.getenv("RABBITMQ_URL")
 
 app = FastAPI()
 
@@ -15,15 +22,15 @@ async def process_message(message: aio_pika.IncomingMessage):
         
 # Função que consome mensagens do RabbitMQ
 async def consume_rabbitmq():
-    connection = await aio_pika.connect_robust("amqp://guest:guest@127.0.0.1:25672/")
+    connection = await aio_pika.connect_robust(RABBITMQ_URL)
 
     async with connection:
         channel = await connection.channel()
         
         # Declaração das exchanges.
-        ex_novos_locatarios = await channel.declare_exchange(exchange="fanout-novos-locatarios", type="fanout")
-        ex_upgrades_plano = await channel.declare_exchange(exchange="fanout-upgrades-plano", type="fanout")
-        ex_cancelamentos_assinatura = await channel.declare_exchange(exchange="fanout-cancelamentos-assinatura", type="fanout")
+        ex_novos_locatarios = await channel.declare_exchange(name="fanout-novos-locatarios", type="fanout")
+        ex_upgrades_plano = await channel.declare_exchange(name="fanout-upgrades-plano", type="fanout")
+        ex_cancelamentos_assinatura = await channel.declare_exchange(name="fanout-cancelamentos-assinatura", type="fanout")
         
         # Declaração das queues.
         q_novos_locatarios = await channel.declare_queue(name="novos-locatarios",
